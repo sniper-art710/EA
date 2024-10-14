@@ -1,1 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaTrader Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            overflow-y: scroll;
+        }
 
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input {
+            margin-bottom: 20px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        #status-bar {
+            margin-top: 20px;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .success {
+            color: green;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const statusBar = document.getElementById('status-bar');
+            const connectButton = document.getElementById('connect-button');
+            const tradeForm = document.getElementById('trade-form');
+
+            function showMessage(message, isSuccess = true) {
+                statusBar.textContent = message;
+                statusBar.classList.remove('hidden');
+                statusBar.classList.toggle('error', !isSuccess);
+                statusBar.classList.toggle('success', isSuccess);
+            }
+
+            connectButton.addEventListener('click', () => {
+                const login = document.getElementById('login').value;
+                const password = document.getElementById('password').value;
+                const serverName = document.getElementById('server_name').value;
+
+                fetch('/connect', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ login, password, server_name: serverName })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'Connected') {
+                        showMessage('Successfully connected!', true);
+                        tradeForm.classList.remove('hidden');
+                    } else {
+                        showMessage('Failed to connect. Check your credentials.', false);
+                    }
+                })
+                .catch(err => {
+                    showMessage('Error connecting to server.', false);
+                });
+            });
+
+            tradeForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+
+                const login = document.getElementById('login').value;
+                const password = document.getElementById('password').value;
+                const serverName = document.getElementById('server_name').value;
+                const symbol = document.getElementById('symbol').value;
+                const lotSize = document.getElementById('lot_size').value;
+                const numTrades = document.getElementById('num_trades').value;
+
+                fetch('/trade', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ login, password, server_name: serverName, symbol, lot_size: lotSize, num_trades: numTrades })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'Trade Successful') {
+                        showMessage('Trade executed successfully!', true);
+                    } else {
+                        showMessage('Successfully placed trades.', false);
+                    }
+                })
+                .catch(err => {
+                    showMessage('Error during trade execution.', false);
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2>Login to MetaTrader 5</h2>
+        <form id="login-form">
+            <label for="login">Login:</label>
+            <input type="text" id="login" name="login" required>
+
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+
+            <label for="server_name">Server Name:</label>
+            <input type="text" id="server_name" name="server_name" required>
+
+            <button type="button" id="connect-button">Connect Account</button>
+        </form>
+
+        <form id="trade-form" class="hidden">
+            <label for="symbol">Symbol:</label>
+            <input type="text" id="symbol" name="symbol" required>
+
+            <label for="lot_size">Lot Size:</label>
+            <input type="number" id="lot_size" name="lot_size" step="0.01" required>
+
+            <label for="num_trades">Number of Trades:</label>
+            <input type="number" id="num_trades" name="num_trades" required>
+
+            <button type="submit">Auto Trade</button>
+        </form>
+
+        <div id="status-bar" class="hidden"></div>
+    </div>
+</body>
+</html>
