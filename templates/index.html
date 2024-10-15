@@ -3,45 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MetaTrader Login</title>
+    <title>Forex Signal</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            overflow-y: scroll;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
         }
-
         .container {
             max-width: 600px;
-            margin: 50px auto;
+            margin: auto;
+            background: white;
             padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background-color: #f9f9f9;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
-
-        h2 {
+        h1 {
             text-align: center;
+            color: #333;
         }
-
-        form {
-            display: flex;
-            flex-direction: column;
-        }
-
         label {
-            margin-bottom: 8px;
-            font-weight: bold;
+            display: block;
+            margin: 15px 0 5px;
         }
-
-        input {
-            margin-bottom: 20px;
-            padding: 10px;
-            font-size: 16px;
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
             border: 1px solid #ccc;
             border-radius: 4px;
         }
-
         button {
+            width: 100%;
             padding: 10px;
             background-color: #28a745;
             color: white;
@@ -49,98 +42,52 @@
             border-radius: 4px;
             cursor: pointer;
         }
-
         button:hover {
             background-color: #218838;
         }
-
-        #status-bar {
+        .result {
+            background: #e9ecef;
+            padding: 20px;
             margin-top: 20px;
-            padding: 10px;
-            text-align: center;
-            border: 1px solid #ccc;
             border-radius: 4px;
-            background-color: #f9f9f9;
         }
-
-        .hidden {
-            display: none;
-        }
-
-        .error {
+        .message {
             color: red;
-        }
-
-        .success {
-            color: green;
+            text-align: center;
+            margin-top: 10px;
         }
     </style>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const statusBar = document.getElementById('status-bar');
-            const connectButton = document.getElementById('connect-button');
-            const tradeForm = document.getElementById('trade-form');
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent the form from submitting normally
 
-            function showMessage(message, isSuccess = true) {
-                statusBar.textContent = message;
-                statusBar.classList.remove('hidden');
-                statusBar.classList.toggle('error', !isSuccess);
-                statusBar.classList.toggle('success', isSuccess);
-            }
-
-            connectButton.addEventListener('click', () => {
-                const login = document.getElementById('login').value;
+                // Gather form data
+                const pair = document.getElementById('pair').value;
+                const apiKey = document.getElementById('api_key').value;
                 const password = document.getElementById('password').value;
-                const serverName = document.getElementById('server_name').value;
 
-                fetch('/connect', {
+                // Send form data via AJAX to the server
+                fetch('/get-signal', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ login, password, server_name: serverName })
+                    body: JSON.stringify({
+                        pair: pair,
+                        api_key: apiKey,
+                        password: password
+                    })
                 })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.status === 'Connected') {
-                        showMessage('Successfully connected!', true);
-                        tradeForm.classList.remove('hidden');
-                    } else {
-                        showMessage('Failed to connect. Check your credentials.', false);
-                    }
+                    // Update the result and message in the HTML without reloading
+                    document.querySelector('.result').innerHTML = data.result || 'No signal available';
+                    document.querySelector('.message').innerHTML = data.message || '';
                 })
-                .catch(err => {
-                    showMessage('Error connecting to server.', false);
-                });
-            });
-
-            tradeForm.addEventListener('submit', (event) => {
-                event.preventDefault();
-
-                const login = document.getElementById('login').value;
-                const password = document.getElementById('password').value;
-                const serverName = document.getElementById('server_name').value;
-                const symbol = document.getElementById('symbol').value;
-                const lotSize = document.getElementById('lot_size').value;
-                const numTrades = document.getElementById('num_trades').value;
-
-                fetch('/trade', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ login, password, server_name: serverName, symbol, lot_size: lotSize, num_trades: numTrades })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'Trade Successful') {
-                        showMessage('Trade executed successfully!', true);
-                    } else {
-                        showMessage('Successfully placed trades.', false);
-                    }
-                })
-                .catch(err => {
-                    showMessage('Error during trade execution.', false);
+                .catch(error => {
+                    console.error('Error:', error);
                 });
             });
         });
@@ -148,34 +95,26 @@
 </head>
 <body>
     <div class="container">
-        <h2>Login to MetaTrader 5</h2>
-        <form id="login-form">
-            <label for="login">Login:</label>
-            <input type="text" id="login" name="login" required>
-
+        <h1>Forex Signal</h1>
+        <form>
+            <label for="pair">Select Pair:</label>
+            <select id="pair" name="pair">
+                {% for pair in pairs %}
+                <option value="{{ pair }}">{{ pair }}</option>
+                {% endfor %}
+            </select>
+            <label for="api_key">API Key:</label>
+            <input type="text" id="api_key" name="api_key" required>
             <label for="password">Password:</label>
             <input type="password" id="password" name="password" required>
-
-            <label for="server_name">Server Name:</label>
-            <input type="text" id="server_name" name="server_name" required>
-
-            <button type="button" id="connect-button">Connect Account</button>
+            <button type="submit">Get Signal</button>
         </form>
-
-        <form id="trade-form" class="hidden">
-            <label for="symbol">Symbol:</label>
-            <input type="text" id="symbol" name="symbol" required>
-
-            <label for="lot_size">Lot Size:</label>
-            <input type="number" id="lot_size" name="lot_size" step="0.01" required>
-
-            <label for="num_trades">Number of Trades:</label>
-            <input type="number" id="num_trades" name="num_trades" required>
-
-            <button type="submit">Auto Trade</button>
-        </form>
-
-        <div id="status-bar" class="hidden"></div>
+        <div class="result">
+            {{ result|safe }}
+        </div>
+        <div class="message">
+            {{ message|safe }}
+        </div>
     </div>
 </body>
 </html>
