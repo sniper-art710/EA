@@ -1,0 +1,5 @@
+Flask
+tradingview_ta
+requests
+pandas
+numpy
