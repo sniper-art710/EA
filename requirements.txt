@@ -1,4 +1,0 @@
-Flask
-metaapi-cloud-sdk
-nest-asyncio
-asyncio
